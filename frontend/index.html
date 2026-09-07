@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>合约风控审查 Agent 系统</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ── Reset & Tokens ─────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --ink-black:    #1a1d28;
+  --ink-blue:     #1e3a5f;
+  --seal-red:     #b91c1c;
+  --seal-red-dim: #dc2626;
+  --amber:        #b45309;
+  --amber-bg:     #fffbeb;
+  --slate:        #475569;
+  --slate-bg:     #f8fafc;
+  --border:       #dde1e7;
+  --border-light: #eef1f5;
+  --bg-page:      #f4f5f8;
+  --bg-surface:   #ffffff;
+  --text-primary: #1a1d28;
+  --text-secondary: #5b6372;
+  --text-muted:   #8b919e;
+  --spacing-xs:   4px;
+  --spacing-sm:   8px;
+  --spacing-md:   16px;
+  --spacing-lg:   24px;
+  --spacing-xl:   32px;
+  --spacing-2xl:  48px;
+  --radius-sm:    6px;
+  --radius-md:    10px;
+  --radius-lg:    16px;
+  --shadow-sm:    0 1px 2px rgba(0,0,0,.04);
+  --shadow-md:    0 4px 12px rgba(0,0,0,.06);
+  --shadow-lg:    0 8px 30px rgba(0,0,0,.08);
+  --font-display: 'Noto Serif SC', serif;
+  --font-body:    'Noto Sans SC', system-ui, -apple-system, sans-serif;
+}
+
+html { font-size: 16px; }
+body {
+  font-family: var(--font-body);
+  color: var(--text-primary);
+  background: var(--bg-page);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* ── Header ─────────────────────────────────────────── */
+.header {
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 var(--spacing-xl);
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+.header-logo {
+  width: 34px;
+  height: 34px;
+  background: var(--ink-blue);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 18px;
+}
+.header-title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink-black);
+}
+.header-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.status-dot { width: 7px; height: 7px; border-radius: 50%; background: #22c55e; }
+.status-dot.offline { background: #ef4444; }
+
+/* ── Layout ──────────────────────────────────────────── */
+.page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: var(--spacing-xl);
+}
+
+/* ── Input Card ──────────────────────────────────────── */
+.input-stage { transition: opacity .3s; }
+.input-stage.hidden { display: none; }
+
+.hero {
+  text-align: center;
+  padding: var(--spacing-2xl) 0 var(--spacing-xl);
+}
+.hero h1 {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--ink-black);
+  letter-spacing: 1px;
+}
+.hero p {
+  color: var(--text-secondary);
+  margin-top: var(--spacing-sm);
+  font-size: 15px;
+}
+
+.input-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+
+/* Tabs */
+.tab-bar {
+  display: flex;
+  border-bottom: 1px solid var(--border-light);
+}
+.tab-btn {
+  flex: 1;
+  padding: 14px 24px;
+  border: none;
+  background: none;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: color .15s, box-shadow .15s;
+  position: relative;
+}
+.tab-btn:hover { color: var(--text-primary); }
+.tab-btn.active {
+  color: var(--ink-blue);
+  box-shadow: inset 0 -2px 0 var(--ink-blue);
+}
+
+/* Tab panels */
+.tab-panel { display: none; padding: var(--spacing-lg); }
+.tab-panel.active { display: block; }
+
+/* Textarea */
+.contract-input {
+  width: 100%;
+  min-height: 320px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.8;
+  color: var(--text-primary);
+  resize: vertical;
+  background: #fafbfc;
+  transition: border-color .15s;
+}
+.contract-input:focus {
+  outline: none;
+  border-color: var(--ink-blue);
+  box-shadow: 0 0 0 3px rgba(30, 58, 95, .08);
+}
+.contract-input::placeholder { color: var(--text-muted); }
+
+/* Upload zone */
+.upload-zone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-2xl);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+  min-height: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-md);
+}
+.upload-zone:hover, .upload-zone.drag-over {
+  border-color: var(--ink-blue);
+  background: rgba(30, 58, 95, .02);
+}
+.upload-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--bg-page);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+}
+.upload-zone p { color: var(--text-secondary); font-size: 14px; }
+.upload-zone .file-hint { color: var(--text-muted); font-size: 12px; }
+.upload-zone .file-name {
+  margin-top: var(--spacing-sm);
+  font-size: 13px;
+  color: var(--ink-blue);
+  font-weight: 500;
+}
+
+/* Actions */
+.input-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  padding: 0 var(--spacing-lg) var(--spacing-lg);
+}
+.btn {
+  padding: 10px 24px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: all .15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn:focus-visible { outline: 2px solid var(--ink-blue); outline-offset: 2px; }
+.btn-secondary { background: var(--bg-surface); color: var(--text-secondary); }
+.btn-secondary:hover { background: var(--bg-page); }
+.btn-primary {
+  background: var(--ink-blue);
+  color: #fff;
+  border-color: var(--ink-blue);
+}
+.btn-primary:hover { background: #152d4a; }
+.btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+
+/* ── Loading ─────────────────────────────────────────── */
+.loading-stage { display: none; padding: var(--spacing-2xl) 0; text-align: center; }
+.loading-stage.active { display: block; }
+
+.loading-seal {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto var(--spacing-xl);
+  border: 3px solid var(--seal-red);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: seal-pulse 1.5s ease-in-out infinite;
+}
+@keyframes seal-pulse {
+  0%, 100% { transform: scale(1); opacity: .7; }
+  50% { transform: scale(1.08); opacity: 1; }
+}
+.loading-seal-inner {
+  font-family: var(--font-display);
+  font-size: 20px;
+  color: var(--seal-red);
+  font-weight: 900;
+}
+.loading-text { color: var(--text-secondary); font-size: 14px; }
+.loading-steps {
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing-xl);
+  margin-top: var(--spacing-lg);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.loading-step { display: flex; align-items: center; gap: 6px; }
+.loading-step.done { color: #22c55e; }
+.loading-step .check { display: none; }
+.loading-step.done .check { display: inline; }
+.loading-step.done .dot { display: none; }
+.loading-step .dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--text-muted);
+  animation: blink .8s infinite;
+}
+
+@keyframes blink { 50% { opacity: .3; } }
+
+/* ── Result Stage ────────────────────────────────────── */
+.result-stage { display: none; }
+.result-stage.active { display: block; }
+
+/* Verdict banner */
+.verdict-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Seal stamp — the signature element */
+.seal-stamp {
+  flex-shrink: 0;
+  width: 90px;
+  height: 90px;
+  border: 3px solid var(--seal-red);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  color: var(--seal-red);
+  font-family: var(--font-display);
+  font-weight: 900;
+  text-align: center;
+  line-height: 1.3;
+  transform: rotate(-3deg);
+}
+.seal-stamp.safe {
+  border-color: #b91c1c;
+  color: #b91c1c;
+}
+.seal-stamp.conditional {
+  border-color: var(--amber);
+  color: var(--amber);
+  border-style: dashed;
+}
+.seal-stamp.reject {
+  border-color: var(--seal-red);
+  color: var(--seal-red);
+  background: rgba(185, 28, 28, .03);
+}
+.seal-stamp .seal-text {
+  font-size: 20px;
+  letter-spacing: 4px;
+}
+
+.verdict-info { flex: 1; }
+.verdict-contract-type {
+  font-family: var(--font-display);
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+.verdict-summary { font-size: 15px; color: var(--text-primary); line-height: 1.7; }
+.verdict-preconditions {
+  margin-top: var(--spacing-sm);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.verdict-preconditions li { margin-top: 4px; }
+
+/* Stats row */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+.stat-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  text-align: center;
+}
+.stat-value { font-family: var(--font-display); font-size: 28px; font-weight: 700; }
+.stat-label { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+.stat-card.p0 .stat-value { color: var(--seal-red); }
+.stat-card.p1 .stat-value { color: var(--amber); }
+.stat-card.p2 .stat-value { color: var(--slate); }
+
+/* Review panels */
+.review-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-lg);
+}
+
+.review-panel {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.panel-header {
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid var(--border-light);
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.panel-badge {
+  font-family: var(--font-body);
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-weight: 500;
+}
+.panel-badge.legal { background: rgba(30, 58, 95, .08); color: var(--ink-blue); }
+.panel-badge.biz { background: rgba(180, 83, 9, .08); color: var(--amber); }
+
+.panel-body { padding: 0 var(--spacing-lg); max-height: 600px; overflow-y: auto; }
+
+.risk-card {
+  padding: var(--spacing-md) 0;
+  border-bottom: 1px solid var(--border-light);
+}
+.risk-card:last-child { border-bottom: none; }
+.risk-header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
+}
+.risk-level-tag {
+  flex-shrink: 0;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .5px;
+}
+.risk-level-tag.p0 { background: #fef2f2; color: var(--seal-red); }
+.risk-level-tag.p1 { background: var(--amber-bg); color: var(--amber); }
+.risk-level-tag.p2 { background: var(--slate-bg); color: var(--slate); }
+
+.risk-name { font-weight: 600; font-size: 14px; }
+.risk-detail {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  margin-top: var(--spacing-sm);
+}
+.risk-detail .field-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  margin-right: 6px;
+}
+.risk-clause {
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--bg-page);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: var(--text-secondary);
+  border-left: 3px solid var(--border);
+}
+.risk-remedy {
+  margin-top: var(--spacing-sm);
+  font-size: 13px;
+  color: var(--ink-blue);
+}
+
+.panel-summary {
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: var(--bg-page);
+  border-top: 1px solid var(--border-light);
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+/* ── Empty / Error ───────────────────────────────────── */
+.empty-state {
+  text-align: center;
+  padding: var(--spacing-2xl);
+  color: var(--text-muted);
+  font-size: 14px;
+}
+.error-banner {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: var(--seal-red);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  margin-bottom: var(--spacing-lg);
+  display: none;
+}
+.error-banner.active { display: block; }
+
+/* ── Responsive ──────────────────────────────────────── */
+@media (max-width: 768px) {
+  .page { padding: var(--spacing-md); }
+  .hero h1 { font-size: 24px; }
+  .stats-row { grid-template-columns: repeat(2, 1fr); }
+  .review-grid { grid-template-columns: 1fr; }
+  .verdict-banner { flex-direction: column; text-align: center; }
+  .seal-stamp { width: 70px; height: 70px; }
+  .seal-stamp .seal-text { font-size: 16px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-seal { animation: none; }
+  .loading-step .dot { animation: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header">
+  <div class="header-brand">
+    <div class="header-logo">契</div>
+    <span class="header-title">合约风控审查 Agent</span>
+  </div>
+  <div class="header-status">
+    <span class="status-dot" id="status-dot"></span>
+    <span id="status-text">检测中…</span>
+  </div>
+</header>
+
+<main class="page">
+
+  <!-- ── Stage: Input ──────────────────────────────── -->
+  <section class="input-stage" id="input-stage">
+    <div class="hero">
+      <h1>AI 驱动的合同风险审查</h1>
+      <p>多智能体协同分析，覆盖法律合规与商业风险的双层审查</p>
+    </div>
+
+    <div class="input-card">
+      <div class="tab-bar">
+        <button class="tab-btn active" data-tab="text">粘贴合同文本</button>
+        <button class="tab-btn" data-tab="file">上传合同文件</button>
+      </div>
+
+      <!-- Text tab -->
+      <div class="tab-panel active" id="panel-text">
+        <textarea class="contract-input" id="contract-text"
+          placeholder="在此粘贴完整的合同文本…&#10;&#10;例如：&#10;甲方（卖方）与乙方（买方）就XX设备买卖事宜，经协商一致，签订本合同。&#10;第一条 标的物&#10;1.1 …"></textarea>
+      </div>
+
+      <!-- File tab -->
+      <div class="tab-panel" id="panel-file">
+        <div class="upload-zone" id="upload-zone">
+          <div class="upload-icon">📄</div>
+          <p>拖拽文件到此处，或点击选择</p>
+          <span class="file-hint">支持 PDF、DOCX 格式，最大 10MB</span>
+          <input type="file" id="file-input" accept=".pdf,.docx" hidden>
+          <div class="file-name" id="file-name"></div>
+        </div>
+      </div>
+
+      <div class="input-actions">
+        <button class="btn btn-secondary" id="btn-clear" style="display:none">清空</button>
+        <button class="btn btn-primary" id="btn-submit">
+          <span>开始审查</span>
+          <span style="font-size:16px">→</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Stage: Loading ─────────────────────────────── -->
+  <section class="loading-stage" id="loading-stage">
+    <div class="loading-seal">
+      <span class="loading-seal-inner">审</span>
+    </div>
+    <p class="loading-text">正在分析合同内容…</p>
+    <div class="loading-steps">
+      <span class="loading-step" id="step-dispatch"><span class="dot"></span><span class="check">✓</span> 合同分类</span>
+      <span class="loading-step" id="step-legal"><span class="dot"></span><span class="check">✓</span> 法律审查</span>
+      <span class="loading-step" id="step-business"><span class="dot"></span><span class="check">✓</span> 商业评估</span>
+      <span class="loading-step" id="step-report"><span class="dot"></span><span class="check">✓</span> 生成报告</span>
+    </div>
+  </section>
+
+  <!-- ── Stage: Result ──────────────────────────────── -->
+  <section class="result-stage" id="result-stage">
+    <div class="error-banner" id="error-banner"></div>
+
+    <!-- Verdict Banner -->
+    <div class="verdict-banner" id="verdict-banner">
+      <div class="seal-stamp" id="seal-stamp">
+        <span class="seal-text" id="seal-text"></span>
+      </div>
+      <div class="verdict-info">
+        <div class="verdict-contract-type" id="verdict-contract-type"></div>
+        <div class="verdict-summary" id="verdict-summary"></div>
+        <ul class="verdict-preconditions" id="verdict-preconditions"></ul>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-value" id="stat-total">—</div>
+        <div class="stat-label">风险总数</div>
+      </div>
+      <div class="stat-card p0">
+        <div class="stat-value" id="stat-p0">—</div>
+        <div class="stat-label">P0 严重风险</div>
+      </div>
+      <div class="stat-card p1">
+        <div class="stat-value" id="stat-p1">—</div>
+        <div class="stat-label">P1 中等风险</div>
+      </div>
+      <div class="stat-card p2">
+        <div class="stat-value" id="stat-p2">—</div>
+        <div class="stat-label">P2 轻微风险</div>
+      </div>
+    </div>
+
+    <!-- Review Panels -->
+    <div class="review-grid">
+      <!-- Legal -->
+      <div class="review-panel">
+        <div class="panel-header">
+          法律合规审查
+          <span class="panel-badge legal">Legal</span>
+        </div>
+        <div class="panel-body" id="legal-risks"></div>
+        <div class="panel-summary" id="legal-summary"></div>
+      </div>
+
+      <!-- Business -->
+      <div class="review-panel">
+        <div class="panel-header">
+          商业风险评估
+          <span class="panel-badge biz">Business</span>
+        </div>
+        <div class="panel-body" id="business-risks"></div>
+        <div class="panel-summary" id="business-summary"></div>
+      </div>
+    </div>
+
+    <!-- Back button -->
+    <div style="text-align:center;margin-top:var(--spacing-xl)">
+      <button class="btn btn-secondary" id="btn-back">← 审查下一份合同</button>
+    </div>
+  </section>
+
+</main>
+
+<script>
+// ── Constants ──────────────────────────────────────────
+const API_BASE = '';
+const STAGES = { input: 'input-stage', loading: 'loading-stage', result: 'result-stage' };
+const LOADING_STEPS = ['step-dispatch', 'step-legal', 'step-business', 'step-report'];
+
+let currentFile = null;
+
+// ── DOM refs ──────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const inputStage = $('input-stage');
+const loadingStage = $('loading-stage');
+const resultStage = $('result-stage');
+const contractText = $('contract-text');
+const fileInput = $('file-input');
+const uploadZone = $('upload-zone');
+const fileName = $('file-name');
+const btnSubmit = $('btn-submit');
+const btnClear = $('btn-clear');
+const btnBack = $('btn-back');
+const errorBanner = $('error-banner');
+const statusDot = $('status-dot');
+const statusText = $('status-text');
+
+// ── Stage switching ────────────────────────────────────
+function showStage(stage) {
+  [inputStage, loadingStage, resultStage].forEach(s => s.classList.remove('active'));
+  if (stage === 'input') inputStage.classList.remove('hidden');
+  else inputStage.classList.add('hidden');
+
+  loadingStage.classList.toggle('active', stage === 'loading');
+  resultStage.classList.toggle('active', stage === 'result');
+
+  if (stage === 'loading') startLoadingAnimation();
+}
+function resetToInput() {
+  showStage('input');
+  errorBanner.classList.remove('active');
+  contractText.value = '';
+  clearFile();
+  btnClear.style.display = 'none';
+}
+
+// ── Tabs ───────────────────────────────────────────────
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const tab = btn.dataset.tab;
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    $(`panel-${tab}`).classList.add('active');
+  });
+});
+
+// ── Upload ─────────────────────────────────────────────
+uploadZone.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', () => handleFile(fileInput.files[0]));
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadZone.classList.remove('drag-over');
+  handleFile(e.dataTransfer.files[0]);
+});
+function handleFile(file) {
+  if (!file) return;
+  if (!file.name.match(/\.(pdf|docx)$/i)) { alert('仅支持 PDF 和 DOCX 格式'); return; }
+  if (file.size > 10 * 1024 * 1024) { alert('文件大小不能超过 10MB'); return; }
+  currentFile = file;
+  fileName.textContent = `已选择：${file.name}`;
+  btnClear.style.display = 'inline-flex';
+}
+function clearFile() {
+  currentFile = null;
+  fileInput.value = '';
+  fileName.textContent = '';
+}
+
+// ── Input tracking ─────────────────────────────────────
+contractText.addEventListener('input', () => {
+  btnClear.style.display = contractText.value.trim() ? 'inline-flex' : 'none';
+});
+
+btnClear.addEventListener('click', resetToInput);
+btnBack.addEventListener('click', resetToInput);
+
+// ── Submit ─────────────────────────────────────────────
+btnSubmit.addEventListener('click', () => {
+  const activeTab = document.querySelector('.tab-btn.active').dataset.tab;
+  if (activeTab === 'file' && !currentFile) { alert('请先选择合同文件'); return; }
+  if (activeTab === 'text' && !contractText.value.trim()) { alert('请输入合同文本'); return; }
+  errorBanner.classList.remove('active');
+  showStage('loading');
+
+  if (activeTab === 'text') submitText();
+  else submitFile();
+});
+
+async function submitText() {
+  try {
+    const res = await fetch(`${API_BASE}/api/review`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contract_text: contractText.value.trim() }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || data.message || `请求失败 (${res.status})`);
+    await finishSteps();
+    renderResult(data);
+  } catch (e) { showError(e.message); }
+}
+
+async function submitFile() {
+  try {
+    const form = new FormData();
+    form.append('file', currentFile);
+    const res = await fetch(`${API_BASE}/api/review/upload`, { method: 'POST', body: form });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || data.message || `请求失败 (${res.status})`);
+    await finishSteps();
+    renderResult(data);
+  } catch (e) { showError(e.message); }
+}
+
+// ── Loading animation ──────────────────────────────────
+function startLoadingAnimation() {
+  LOADING_STEPS.forEach(id => $(id).classList.remove('done'));
+}
+
+// 收到 API 响应后，按顺序逐个点亮四个步骤
+async function finishSteps() {
+  for (const id of LOADING_STEPS) {
+    $(id).classList.add('done');
+    await sleep(300);
+  }
+}
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ── Render result ──────────────────────────────────────
+function renderResult(response) {
+  const data = response.data || response;
+  if (!data) { showError('服务器返回数据为空'); return; }
+
+  // Error in review
+  if (data.has_error || data.error) {
+    showError(data.error || '审查过程发生错误');
+    return;
+  }
+
+  // Verdict
+  const v = data.verdict || {};
+  const conclusion = v.final_conclusion || '未知';
+  const sealEl = $('seal-stamp');
+  sealEl.classList.remove('safe', 'conditional', 'reject');
+  if (conclusion.includes('不建议签') || conclusion.includes('不建议')) sealEl.classList.add('reject');
+  else if (conclusion.includes('有条件')) sealEl.classList.add('conditional');
+  else sealEl.classList.add('safe');
+  $('seal-text').textContent = conclusion;
+
+  // Contract type
+  const meta = data.meta || {};
+  const typeParts = [meta.contract_type, meta.contract_sub_type].filter(Boolean);
+  $('verdict-contract-type').textContent = typeParts.join(' · ') || '合同审查报告';
+
+  // Summary
+  $('verdict-summary').textContent = v.reasoning || v.legal_conclusion || '';
+
+  // Preconditions
+  const precondList = $('verdict-preconditions');
+  precondList.innerHTML = '';
+  (v.preconditions || []).forEach(p => {
+    const li = document.createElement('li');
+    li.textContent = p;
+    precondList.appendChild(li);
+  });
+
+  // Stats
+  const stats = data.statistics || {};
+  $('stat-total').textContent = stats.total_risks ?? '—';
+  const byLevel = stats.by_level || {};
+  $('stat-p0').textContent = byLevel.P0 ?? 0;
+  $('stat-p1').textContent = byLevel.P1 ?? 0;
+  $('stat-p2').textContent = byLevel.P2 ?? 0;
+
+  // Legal review
+  renderReviewSection('legal', data.legal_review);
+  renderReviewSection('business', data.business_review);
+
+  showStage('result');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function renderReviewSection(type, section) {
+  if (!section) { $(`${type}-risks`).innerHTML = '<div class="empty-state">暂无审查数据</div>'; return; }
+
+  const risks = section.risks || [];
+  const container = $(`${type}-risks`);
+  const summaryEl = $(`${type}-summary`);
+
+  if (!risks.length) {
+    container.innerHTML = '<div class="empty-state">✅ 该维度未发现风险</div>';
+  } else {
+    container.innerHTML = risks.map(r => `
+      <div class="risk-card">
+        <div class="risk-header">
+          <span class="risk-level-tag ${(r.risk_level || '').toLowerCase()}">${r.risk_level || '—'}</span>
+          <span class="risk-name">${esc(r.risk_name || '未命名风险')}</span>
+        </div>
+        <div class="risk-detail">
+          ${r.risk_consequence ? `<div><span class="field-label">风险后果</span>${esc(r.risk_consequence)}</div>` : ''}
+          ${r.legal_basis ? `<div><span class="field-label">法律依据</span>${esc(r.legal_basis)}</div>` : ''}
+          ${r.criteria ? `<div><span class="field-label">判别标准</span>${esc(r.criteria)}</div>` : ''}
+          ${r.detail ? `<div><span class="field-label">详细分析</span>${esc(r.detail)}</div>` : ''}
+        </div>
+        ${r.related_clause ? `
+          <div class="risk-clause">📌 相关条款：${esc(r.related_clause)}</div>
+        ` : ''}
+        ${r.remediation || r.recommended_wording ? `
+          <div class="risk-remedy">
+            ${r.remediation ? `💡 整改建议：${esc(r.remediation)}` : ''}
+            ${r.recommended_wording ? `<br>📝 推荐措辞：${esc(r.recommended_wording)}` : ''}
+          </div>
+        ` : ''}
+      </div>
+    `).join('');
+  }
+
+  const summaryText = section.summary || section.overall_assessment || section.recommendation || '';
+  summaryEl.textContent = summaryText;
+}
+
+function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+// ── Error ──────────────────────────────────────────────
+function showError(msg) {
+  errorBanner.textContent = `审查失败：${msg}`;
+  errorBanner.classList.add('active');
+  showStage('result');
+}
+
+// ── Health check ───────────────────────────────────────
+async function checkHealth() {
+  try {
+    const res = await fetch(`${API_BASE}/health`);
+    if (res.ok) {
+      statusDot.classList.remove('offline');
+      statusText.textContent = '服务正常';
+    } else { throw new Error(); }
+  } catch {
+    statusDot.classList.add('offline');
+    statusText.textContent = '服务离线';
+  }
+}
+checkHealth();
+setInterval(checkHealth, 30000);
+
+// ── Keyboard shortcut ──────────────────────────────────
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    e.preventDefault();
+    btnSubmit.click();
+  }
+});
+</script>
+</body>
+</html>

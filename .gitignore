@@ -1,0 +1,59 @@
+# Environment
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# Virtual environment
+venv/
+.venv/
+env/
+
+# Runtime directories
+workspace/
+sessions/
+memory/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Milvus local
+milvus.db
+milvus_data/
+milvus_data.db/
+
+# Logs
+*.log
+logs/
+
+# Upload temp
+uploads/
+
+# Personal Claude Code skills (local copies, not part of project)
+.claude/
+
+# Third-party source trees (not part of project)
+ChatLaw-main*/
+LawRefBook-master*/

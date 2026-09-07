@@ -1,0 +1,75 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+.DS_Store
+.DS_Store?
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Milvus local data (keep in volume, not in image)
+milvus.db
+milvus_data/
+milvus_data.db/
+
+# Logs
+*.log
+logs/
+
+# Upload temp
+uploads/
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Docs
+docs/
+
+# Claude
+.claude/
+CLAUDE.md
+
+# External data sources
+ChatLaw-main*/
+LawRefBook-master*/
+
+# Scripts (dev only, not needed at runtime)
+scripts/
+
+# Tests (not needed at runtime)
+tests/
+
+# CI/CD
+.github/
+.gitlab-ci.yml
